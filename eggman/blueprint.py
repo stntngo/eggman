@@ -1,22 +1,27 @@
 from __future__ import annotations
 
+import asyncio
 import inspect
-from typing import Any, Callable, get_type_hints
+from collections import namedtuple
+from typing import Any, Callable, Dict, List, Tuple, Type, get_type_hints
 
 from sanic import Sanic
 from sanic.request import Request
 from sanic.response import HTTPResponse, text
 
+Handler = Callable[[Request], HTTPResponse]
+HandlerPkg = namedtuple("HandlerPkg", ["fn", "rule", "options"])
+
 
 class Blueprint:
     def __init__(self, url_prefix: str) -> None:
         self._prefix = url_prefix
-        self._deferred = []
+        self._deferred: List[HandlerPkg] = []
 
     def route(self, rule: str, **options: Any) -> Callable:
-        def wrapper(fn: Callable) -> Callable:
-            # XXX: Convert this into a namedtuple
-            self._deferred.append((fn, rule, options))
+        def wrapper(fn: Handler) -> Handler:
+            pkg = HandlerPkg(fn, rule, options)
+            self._deferred.append(pkg)
 
             return fn
 
@@ -25,16 +30,12 @@ class Blueprint:
     @property
     def jab(self) -> Callable:
 
-        constructor_deps = {}
-        # XXX: Consolidate this down to a single thing
-        constructors = {}
-        class_deps = {}
-        class_routes = {}
+        constructor_deps: Dict[str, Type] = {}
+        constructors: Dict[str, Type] = {}
+        class_deps: Dict[str, Dict[str, str]] = {}
+        class_routes: Dict[str, List[Tuple]] = {}
 
         def constructor(sanic: Sanic, **kwargs) -> Blueprint:  # type: ignore
-            # 0. switch to a route_adder
-            # 1. Build all of the necessary instances
-            # 2. for each route map it into the provided sanic object
             for name, cls_ in constructors.items():
                 dep_map = class_deps[name]
                 deps = {k: kwargs[v] for k, v in dep_map.items()}
@@ -94,7 +95,8 @@ class Test:
         self.age = age
 
     @test.route("/name", methods=["GET"])
-    def get_name(self, req: Request) -> HTTPResponse:
+    async def get_name(self, req: Request) -> HTTPResponse:
+        await asyncio.sleep(0.5)
         return text(self.name)
 
     @test.route("/other", methods=["POST"])
