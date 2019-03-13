@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 sanic = "*"
+typing_extensions = "*"
 
 [dev-packages]
 black = "*"
