@@ -46,7 +46,6 @@ class Blueprint:
 
             return self
 
-        offset = 0
         for fn, rule, options in self._deferred:
             mod = inspect.getmodule(fn)
             cls_name, fn_name = tuple(
@@ -77,8 +76,7 @@ class Blueprint:
                     class_deps[class_.__name__][arg] = existing
                     continue
 
-                pseudo_arg = "arg_{}".format(offset)
-                offset += 1
+                pseudo_arg = "arg_{}".format(len(constructor_deps))
 
                 constructor_deps[pseudo_arg] = type_
                 class_deps[class_.__name__][arg] = pseudo_arg

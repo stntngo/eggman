@@ -12,6 +12,12 @@ def black(c):  # type: ignore
 
 
 @task
+def mypy(c):  # type: ignore
+    c.run("mypy . --ignore-missing-imports")
+
+
+@task
 def lint(c):  # type: ignore
     isort(c)
     black(c)
+    mypy(c)
