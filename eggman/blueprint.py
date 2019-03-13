@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, Callable, get_type_hints
 import inspect
+from typing import Any, Callable, get_type_hints
+
 from sanic import Sanic
 from sanic.request import Request
 from sanic.response import HTTPResponse, text
 
 
 class Blueprint:
-
     def __init__(self, url_prefix: str) -> None:
         self._prefix = url_prefix
         self._deferred = []
@@ -26,6 +26,7 @@ class Blueprint:
     def jab(self) -> Callable:
 
         constructor_deps = {}
+        # XXX: Consolidate this down to a single thing
         constructors = {}
         class_deps = {}
         class_routes = {}
@@ -48,7 +49,9 @@ class Blueprint:
         offset = 0
         for fn, rule, options in self._deferred:
             mod = inspect.getmodule(fn)
-            cls_name, fn_name = tuple(fn.__qualname__.split("<locals>", 1)[0].rsplit(".", 1))
+            cls_name, fn_name = tuple(
+                fn.__qualname__.split("<locals>", 1)[0].rsplit(".", 1)
+            )
             class_ = getattr(mod, cls_name)
 
             if not constructors.get(class_.__name__):
@@ -66,7 +69,9 @@ class Blueprint:
                 if arg == "return":
                     continue
 
-                existing = next((k for k, v in constructor_deps.items() if v == type_), None)
+                existing = next(
+                    (k for k, v in constructor_deps.items() if v == type_), None
+                )
 
                 if existing:
                     class_deps[class_.__name__][arg] = existing

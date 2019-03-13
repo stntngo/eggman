@@ -18,7 +18,6 @@ class Test:
 Test("niels").on_start(bp)
 
 
-
 @bp.route("/test")
 def name(request):
     return sanic.response.json({"name": "test"})
