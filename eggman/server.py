@@ -1,6 +1,6 @@
-from typing import Any, Callable, Dict
+from typing import Any, Callable
 
-from sanic import Blueprint, Sanic
+from sanic import Sanic
 
 from eggman.types import Handler
 
