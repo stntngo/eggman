@@ -2,25 +2,36 @@ from __future__ import annotations
 
 import inspect
 from collections import namedtuple
-from typing import Any, Callable, Dict, List, Tuple, Type, get_type_hints
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, get_type_hints
 
-from sanic.request import Request
-from sanic.response import HTTPResponse
 from typing_extensions import Protocol
 
-Handler = Callable[[Request], HTTPResponse]
+from eggman.types import Handler
+
 HandlerPkg = namedtuple("HandlerPkg", ["fn", "rule", "options"])
 
 
 class Router(Protocol):
-    def add_route(self, fn: Callable, rule: str, **kwargs: Any) -> None:
+    def add_route(self, fn: Handler, rule: str, **kwargs: Any) -> None:
         pass
 
 
 class Blueprint:
-    def __init__(self, url_prefix: str) -> None:
-        self._jab = "eggman.Blueprint => <\"{}\">".format(url_prefix)
-        self._prefix = url_prefix
+    def __init__(
+        self,
+        name: str,
+        url_prefix: Optional[str] = None,
+        host: Optional[str] = None,
+        version: Optional[str] = None,
+        strict_slashes: bool = False,
+    ) -> None:
+        self.name = name
+        self.url_prefix = url_prefix or "/{}".format(name)
+        self.version = version
+        self.host = host
+        self.strict_slashes = strict_slashes
+
+        self._jab = "eggman.Blueprint.{}".format(name)
         self._deferred: List[HandlerPkg] = []
         self._instances: Dict[str, Any] = {}
 
@@ -28,7 +39,6 @@ class Blueprint:
         def wrapper(fn: Handler) -> Handler:
             pkg = HandlerPkg(fn, rule, options)
             self._deferred.append(pkg)
-
             return fn
 
         return wrapper
@@ -48,9 +58,15 @@ class Blueprint:
 
                 self._instances[name] = instance
 
+                # handle routes
                 for fn_name, rule, options in class_routes[name]:
                     fn = getattr(instance, fn_name)
-                    app.add_route(fn, self._prefix + rule, **options)
+
+                    uri = self.url_prefix + rule if self.url_prefix else rule
+
+                    app.add_route(fn, uri, **options)
+
+                # handle middleware
 
             return self
 
