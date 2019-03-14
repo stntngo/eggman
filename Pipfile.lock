@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "9a7d0f4497980a4c2e35cef0cd675eb3c3087863ea3f31163a95767815d0f039"
+            "sha256": "522b6465664bf3ef539be16dc4a69c4475df3e53ee5b9707c55629ef4c52729a"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -28,6 +28,11 @@
                 "sha256:e00cbd7ba01ff748e494248183abc6e153f49181169d8a3d41bb49132ca01dfc"
             ],
             "version": "==0.0.13"
+        },
+        "jab": {
+            "editable": true,
+            "git": "https://github.com/stntngo/jab",
+            "ref": "39c1e661ef3322e2983043582a22740694a6dcca"
         },
         "multidict": {
             "hashes": [
@@ -70,6 +75,13 @@
             ],
             "index": "pypi",
             "version": "==18.12.0"
+        },
+        "toposort": {
+            "hashes": [
+                "sha256:d80128b83b411d503b0cdb4a8f172998bc1d3b434b6402a349b8ebd734d51a80",
+                "sha256:dba5ae845296e3bf37b042c640870ffebcdeb8cd4df45adaa01d8c5476c557dd"
+            ],
+            "version": "==1.5"
         },
         "typing-extensions": {
             "hashes": [
