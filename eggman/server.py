@@ -1,8 +1,9 @@
 from typing import Any, Callable
 
 from sanic import Sanic
+from sanic.websocket import WebSocketProtocol
 
-from eggman.types import Handler
+from eggman.types import Handler, WebSocketHandler
 
 
 class Server:
@@ -18,17 +19,14 @@ class Server:
 
         return wrapper
 
-    def add_route(self, fn: Handler, rule: str, **kwargs: Any) -> None:
-        self._app.add_route(fn, rule, **kwargs)
+    def add_route(self, fn: Handler, rule: str, **options: Any) -> None:
+        self._app.add_route(fn, rule, **options)
 
-    def ws_route(self, rule: str, **options: Any) -> Callable:
-        def wrapper(fn: Handler) -> Handler:
-            raise NotImplementedError
-
-        return wrapper
+    def add_websocket_route(self, fn: WebSocketHandler, rule: str, **options: Any) -> None:
+        self._app.add_websocket_route(fn, rule, **options)
 
     async def run(self) -> None:
-        server = await self._app.create_server()
+        server = await self._app.create_server(protocol=WebSocketProtocol)
         await server.wait_closed()
 
     @property

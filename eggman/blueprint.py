@@ -5,11 +5,14 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Type, get_type_hi
 
 from typing_extensions import Protocol
 
-from eggman.types import Handler, HandlerPkg
+from eggman.types import Handler, HandlerPkg, UnboundMethodConstructor, WebSocketHandler
 
 
 class Router(Protocol):
-    def add_route(self, fn: Handler, rule: str, **kwargs: Any) -> None:
+    def add_route(self, fn: Handler, rule: str, **options: Any) -> None:
+        pass
+    
+    def add_websocket_route(self, fn: WebSocketHandler, rule: str, **options: Any) -> None:
         pass
 
 
@@ -29,97 +32,104 @@ class Blueprint:
         self.strict_slashes = strict_slashes
 
         self._jab = f"eggman.Blueprint.{name}"
-        self._deferred: List[HandlerPkg] = []
+        self.deferred_routes: List[HandlerPkg] = []
+        self.deferred_websocket: List[HandlerPkg] = []
         self._instances: Dict[str, Any] = {}
 
     def route(self, rule: str, **options: Any) -> Callable:
-
         def wrapper(fn: Handler) -> Handler:
             pkg = HandlerPkg(fn, rule, options)
-            self._deferred.append(pkg)
+            self.deferred_routes.append(pkg)
             return fn
 
+        return wrapper
+    
+    def websocket(self, rule: str, **options: Any) -> Callable:
+        def wrapper(fn: WebSocketHandler) -> WebSocketHandler:
+            pkg = HandlerPkg(fn, rule, options)
+            self.deferred_websocket.append(pkg)
+            return fn
+        
         return wrapper
 
     @property
     def jab(self) -> Callable:
-        constructor_deps: Dict[str, Type] = {}
-        constructors: Dict[str, Type] = {}
-        class_deps: Dict[str, Dict[str, str]] = {}
-        class_routes: Dict[str, List[Tuple]] = {}
-        raw_funcs: List[HandlerPkg] = []
+        unbound_routes = UnboundMethodConstructor()
+        unbound_ws = UnboundMethodConstructor()
+        func_routes: List[HandlerPkg] = []
+        func_ws: List[HandlerPkg] = []
 
         def constructor(app: Router, **kwargs) -> Blueprint:  # type: ignore
-            for name, cls_ in constructors.items():
-                dep_map = class_deps[name]
+            # handle unbound routes
+            for name, cls_ in unbound_routes.constructors.items():
+                dep_map = unbound_routes.constructor_deps[name]
                 deps = {k: kwargs[v] for k, v in dep_map.items()}
                 instance = cls_(**deps)
 
                 self._instances[name] = instance
 
                 # handle routes
-                for fn_name, rule, options in class_routes[name]:
+                for fn_name, rule, options in unbound_routes.constructor_routes[name]:
                     fn = getattr(instance, fn_name)
 
                     uri = self.url_prefix + rule if self.url_prefix else rule
 
                     app.add_route(fn, uri, **options)
 
-            for fn, rule, options in raw_funcs:
+            # handle function routes
+            for fn, rule, options in func_routes:
                 uri = self.url_prefix + rule if self.url_prefix else rule
 
                 app.add_route(fn, uri, **options)
 
-                # handle websockets
-                # handle middleware
+            # handle websockets
+            for name, cls_ in unbound_ws.constructors.items():
+                dep_map = unbound_ws.constructor_deps[name]
+                deps = {k: kwargs[v] for k, v in dep_map.items()}
+                instance = cls_(**deps)
+
+                # TODO (niels): Check if the instance already exists and use that instead
+                self._instances[name] = instance
+
+                for fn_name, rule, options in unbound_ws.constructor_routes[name]:
+                    fn = getattr(instance, fn_name)
+                    
+                    uri = self.url_prefix + rule if self.url_prefix else rule
+
+                    app.add_websocket_route(fn, uri, **options)
+
+            for fn, rule, options in func_ws:
+                uri = self.url_prefix + rule if self.url_prefix else rule
+
+                app.add_websocket_route(fn, uri, **options)
+
+            # handle middleware
 
             return self
 
-        # handle the unbound class methods
-        for fn, rule, options in self._deferred:
-            mod = inspect.getmodule(fn)
-
+        for fn, rule, options in self.deferred_routes:
             # HACK: Right now when parsing a deferred function handler we try to split its
             # qualified name into a class name and a method name. If we're unable to do so
             # then we assume that this function does not belong to a class and we append it
             # to the list of raw functions with the understanding that it does not need to
             # have a class instance in order for the function to be called.
             try:
-                cls_name, fn_name = tuple(
-                    fn.__qualname__.split("<locals>", 1)[0].rsplit(".", 1)
-                )
-                class_ = getattr(mod, cls_name)
+                unbound_routes.add(fn, rule, **options)
             except ValueError:
-                raw_funcs.append(HandlerPkg(fn, rule, options))
-                continue
+                func_routes.append(HandlerPkg(fn, rule, options))
 
-            if not constructors.get(cls_name):
-                constructors[cls_name] = class_
+        for fn, rule, options in self.deferred_websocket:
+            unbound_ws.update_offset(len(unbound_routes.deps))
 
-            if not class_routes.get(cls_name):
-                class_routes[cls_name] = []
+            try:
+                unbound_ws.add(fn, rule, **options)
+            except ValueError:
+                func_ws.append(HandlerPkg(fn, rule, options))
 
-            if not class_deps.get(cls_name):
-                class_deps[cls_name] = {}
+        for arg, type_ in unbound_routes.deps.items():
+            constructor.__annotations__[arg] = type_
 
-            class_routes[cls_name].append((fn_name, rule, options))
-
-            for arg, type_ in get_type_hints(class_.__init__).items():
-                if arg == "return":
-                    continue
-
-                existing = next(
-                    (k for k, v in constructor_deps.items() if v == type_), None
-                )
-
-                if existing:
-                    class_deps[cls_name][arg] = existing
-                    continue
-
-                pseudo_arg = f"arg_{len(constructor_deps)}"
-
-                constructor_deps[pseudo_arg] = type_
-                class_deps[cls_name][arg] = pseudo_arg
-                constructor.__annotations__[pseudo_arg] = type_
+        for arg, type_ in unbound_ws.deps.items():
+            constructor.__annotations__[arg] = type_
 
         return constructor

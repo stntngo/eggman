@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import Callable
 
+from sanic.websocket import WebSocketProtocol
 from sanic.request import Request
 from sanic.response import HTTPResponse, text
 from typing_extensions import Protocol
@@ -71,10 +72,12 @@ class Backward:
         self.db = db
         self.name = "niels"
 
-    @bp_two.route("/backward")
-    async def go_backward(self, req: Request) -> HTTPResponse:
-        self.db.decr()
-        return text("{} - {}".format(str(self.name[::-1]), self.db.get()))
+    @bp_two.websocket("/backward")
+    async def go_backward(self, req: Request, ws: WebSocketProtocol) -> None:
+        for _ in range(10):
+            self.db.decr()
+            msg = f"{self.name[::-1]} - {self.db.get()}"
+            await ws.send(msg)
 
 
 @bp_two.route("/whatever")
