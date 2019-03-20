@@ -22,7 +22,9 @@ class Server:
     def add_route(self, fn: Handler, rule: str, **options: Any) -> None:
         self._app.add_route(fn, rule, **options)
 
-    def add_websocket_route(self, fn: WebSocketHandler, rule: str, **options: Any) -> None:
+    def add_websocket_route(
+        self, fn: WebSocketHandler, rule: str, **options: Any
+    ) -> None:
         self._app.add_websocket_route(fn, rule, **options)
 
     async def run(self) -> None:

@@ -11,8 +11,10 @@ from eggman.types import Handler, HandlerPkg, UnboundMethodConstructor, WebSocke
 class Router(Protocol):
     def add_route(self, fn: Handler, rule: str, **options: Any) -> None:
         pass
-    
-    def add_websocket_route(self, fn: WebSocketHandler, rule: str, **options: Any) -> None:
+
+    def add_websocket_route(
+        self, fn: WebSocketHandler, rule: str, **options: Any
+    ) -> None:
         pass
 
 
@@ -43,13 +45,13 @@ class Blueprint:
             return fn
 
         return wrapper
-    
+
     def websocket(self, rule: str, **options: Any) -> Callable:
         def wrapper(fn: WebSocketHandler) -> WebSocketHandler:
             pkg = HandlerPkg(fn, rule, options)
             self.deferred_websocket.append(pkg)
             return fn
-        
+
         return wrapper
 
     @property
@@ -93,7 +95,7 @@ class Blueprint:
 
                 for fn_name, rule, options in unbound_ws.constructor_routes[name]:
                     fn = getattr(instance, fn_name)
-                    
+
                     uri = self.url_prefix + rule if self.url_prefix else rule
 
                     app.add_websocket_route(fn, uri, **options)

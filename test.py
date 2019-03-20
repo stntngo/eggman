@@ -3,9 +3,10 @@ from __future__ import annotations
 import asyncio
 from typing import Callable
 
-from sanic.websocket import WebSocketProtocol
+from jab import Logger
 from sanic.request import Request
 from sanic.response import HTTPResponse, text
+from sanic.websocket import WebSocketProtocol
 from typing_extensions import Protocol
 
 import vendor as jab
@@ -47,8 +48,10 @@ bp_two = Blueprint("other", url_prefix="/other")
 
 
 class Test:
-    def __init__(self, db: GetIncr) -> None:
+    def __init__(self, db: GetIncr, log: Logger, _db: GetDecr) -> None:
+        self.log = log
         self.db = db
+        self._db = _db
         self.name = "niels"
         self.age = 27
 
@@ -68,20 +71,23 @@ class Test:
 
     @bp_one.websocket("/backward")
     async def go_backward(self, req: Request, ws: WebSocketProtocol) -> None:
-        for _ in range(10):
-            self.db.decr()
+        self.log.critical(str(req))
+        for _ in range(1000):
+            self._db.decr()
             msg = f"{self.name[::-1]} - {self.db.get()}"
             await ws.send(msg)
+            await asyncio.sleep(0.5)
 
 
 class Backward:
-    def __init__(self, db: GetDecr) -> None:
+    def __init__(self, db: GetDecr, log: Logger) -> None:
+        self.log = log
         self.db = db
         self.name = "niels"
 
     @bp_two.websocket("/backward")
     async def go_backward(self, req: Request, ws: WebSocketProtocol) -> None:
-        for _ in range(10):
+        for _ in range(100):
             self.db.decr()
             msg = f"{self.name[::-1]} - {self.db.get()}"
             await ws.send(msg)

@@ -6,7 +6,6 @@ from sanic.request import Request
 from sanic.response import HTTPResponse
 from sanic.websocket import WebSocketProtocol
 
-
 Handler = Callable[[Request], HTTPResponse]
 
 HandlerPkg = namedtuple("HandlerPkg", ["fn", "rule", "options"])
