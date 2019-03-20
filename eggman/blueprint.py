@@ -118,8 +118,8 @@ class Blueprint:
             except ValueError:
                 func_routes.append(HandlerPkg(fn, rule, options))
 
+        unbound_ws.update_offset(len(unbound_routes.deps))
         for fn, rule, options in self.deferred_websocket:
-            unbound_ws.update_offset(len(unbound_routes.deps))
 
             try:
                 unbound_ws.add(fn, rule, **options)
