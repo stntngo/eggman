@@ -38,7 +38,7 @@ class Blueprint:
             pkg = HandlerPkg(fn, rule, options)
             self._deferred.append(pkg)
 
-            print(fn.__qualname__)
+            print(fn.__qualname__, type(fn))
             if inspect.ismethod(fn) and not hasattr(fn, "__self__"):
                 self.unbound_class_handlers.append(pkg)
 
@@ -52,6 +52,7 @@ class Blueprint:
         constructors: Dict[str, Type] = {}
         class_deps: Dict[str, Dict[str, str]] = {}
         class_routes: Dict[str, List[Tuple]] = {}
+        raw_funcs: List[HandlerPkg] = []
 
         def constructor(app: Router, **kwargs) -> Blueprint:  # type: ignore
             for name, cls_ in constructors.items():
@@ -69,6 +70,11 @@ class Blueprint:
 
                     app.add_route(fn, uri, **options)
 
+            for fn, rule, options in raw_funcs:
+                uri = self.url_prefix + rule if self.url_prefix else rule
+
+                app.add_route(fn, uri, **options)
+
                 # handle websockets
                 # handle middleware
 
@@ -79,10 +85,15 @@ class Blueprint:
             # check if this is an unbound function of a method
             mod = inspect.getmodule(fn)
             # use parse
-            cls_name, fn_name = tuple(
-                fn.__qualname__.split("<locals>", 1)[0].rsplit(".", 1)
-            )
-            class_ = getattr(mod, cls_name)
+
+            try:
+                cls_name, fn_name = tuple(
+                    fn.__qualname__.split("<locals>", 1)[0].rsplit(".", 1)
+                )
+                class_ = getattr(mod, cls_name)
+            except ValueError:
+                raw_funcs.append(HandlerPkg(fn, rule, options))
+                continue
 
             if not constructors.get(cls_name):
                 constructors[cls_name] = class_

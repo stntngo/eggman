@@ -82,16 +82,6 @@ def whatever(req: Request) -> HTTPResponse:
     return text("whatever")
 
 
-def fuck(name: str) -> Callable:
-    @bp_two.route("/{}".format(name))
-    def what_if_do_something_dumb_like_this(req: Request) -> HTTPResponse:
-        return text(name)
-
-    return what_if_do_something_dumb_like_this
-
-
 app = Server()
-fuck("niels")
-fuck("emily")
 
 jab.Harness().provide(app.jab, bp_one.jab, bp_two.jab, Database).run()
