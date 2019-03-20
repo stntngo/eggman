@@ -60,7 +60,28 @@ class Blueprint:
     @property
     def jab(self) -> Callable:
         """
-        TODO (niels): Write docstring. This is the most confusing part of the entire thing so it needs good documentation
+        `jab` provides the blueprint to the jab harness by creating a constructor function
+        that depends on the dependencies of the uninstantiated classes whose methods have been
+        wrapped in `route` and `websocket` decorators, hoisting the dependencies of the classes
+        to the level of the jab harness itself.
+
+        `jab` accomplishes this by first breaking down all wrapped handlers into either unbound methods
+        or regular functions[1]. As the wrapped methods are from uninstantiated classes with their own
+        dependencies, `jab` creates a mapping of a class's dependencies to a shadowed list of dependencies
+        used to define the constructor function. When the constructor function is called from inside the jab
+        harness and all the shadowed dependencies are provided to it, the constructor maps the shadowed
+        dependency names back to each class's dependency and creates an instance of that class using the
+        dependencies satisfied by the jab harness.
+
+        As the classes are instantiated and their unbound methods turned into bound methods with their
+        dependencies satisfied, the handlers are added to a `Router`. In practice this `Router` is an
+        `eggman.Server` instance.
+
+        Notes
+        -----
+        [1] The formal disction between these two has been eroded in recent versions of Python so we're forced
+            to do some hacky name string parsing in order to figure out which is which. Ideally we can find
+            a solution that does not involve name string parsing.
         """
         unbound_routes = UnboundMethodConstructor()
         unbound_ws = UnboundMethodConstructor()
