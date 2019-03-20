@@ -66,6 +66,13 @@ class Test:
     def get_age(self, req: Request) -> HTTPResponse:
         return text(self.age)
 
+    @bp_one.websocket("/backward")
+    async def go_backward(self, req: Request, ws: WebSocketProtocol) -> None:
+        for _ in range(10):
+            self.db.decr()
+            msg = f"{self.name[::-1]} - {self.db.get()}"
+            await ws.send(msg)
+
 
 class Backward:
     def __init__(self, db: GetDecr) -> None:

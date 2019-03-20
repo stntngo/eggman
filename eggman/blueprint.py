@@ -84,12 +84,12 @@ class Blueprint:
 
             # handle websockets
             for name, cls_ in unbound_ws.constructors.items():
-                dep_map = unbound_ws.constructor_deps[name]
-                deps = {k: kwargs[v] for k, v in dep_map.items()}
-                instance = cls_(**deps)
-
-                # TODO (niels): Check if the instance already exists and use that instead
-                self._instances[name] = instance
+                instance = self._instances.get(name)
+                if not isinstance(instance, cls_):
+                    dep_map = unbound_ws.constructor_deps[name]
+                    deps = {k: kwargs[v] for k, v in dep_map.items()}
+                    instance = cls_(**deps)
+                    self._instances[name] = instance
 
                 for fn_name, rule, options in unbound_ws.constructor_routes[name]:
                     fn = getattr(instance, fn_name)
