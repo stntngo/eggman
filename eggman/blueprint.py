@@ -27,6 +27,10 @@ class Blueprint:
         version: Optional[str] = None,
         strict_slashes: bool = False,
     ) -> None:
+        """
+        TODO (niels): Write docstring
+        """
+
         self.name = name
         self.url_prefix = url_prefix or f"/{name}"
         self.version = version
@@ -56,6 +60,9 @@ class Blueprint:
 
     @property
     def jab(self) -> Callable:
+        """
+        TODO (niels): Write docstring. This is the most confusing part of the entire thing so it needs good documentation
+        """
         unbound_routes = UnboundMethodConstructor()
         unbound_ws = UnboundMethodConstructor()
         func_routes: List[HandlerPkg] = []
