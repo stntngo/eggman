@@ -7,6 +7,7 @@ name = "pypi"
 sanic = "*"
 typing_extensions = "*"
 jab = {editable = true, git = "https://github.com/stntngo/jab"}
+parse = "*"
 
 [dev-packages]
 black = "*"

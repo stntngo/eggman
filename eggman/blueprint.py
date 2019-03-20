@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import inspect
-from collections import namedtuple
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, get_type_hints
 
 from typing_extensions import Protocol
 
-from eggman.types import Handler
-
-HandlerPkg = namedtuple("HandlerPkg", ["fn", "rule", "options"])
+from eggman.types import Handler, HandlerPkg
 
 
 class Router(Protocol):
@@ -32,6 +29,7 @@ class Blueprint:
         self.strict_slashes = strict_slashes
 
         self._jab = "eggman.Blueprint.{}".format(name)
+        self.unbound_class_handlers: List[HandlerPkg] = []
         self._deferred: List[HandlerPkg] = []
         self._instances: Dict[str, Any] = {}
 
@@ -39,6 +37,11 @@ class Blueprint:
         def wrapper(fn: Handler) -> Handler:
             pkg = HandlerPkg(fn, rule, options)
             self._deferred.append(pkg)
+
+            print(fn.__qualname__)
+            if inspect.ismethod(fn) and not hasattr(fn, "__self__"):
+                self.unbound_class_handlers.append(pkg)
+
             return fn
 
         return wrapper
@@ -66,12 +69,16 @@ class Blueprint:
 
                     app.add_route(fn, uri, **options)
 
+                # handle websockets
                 # handle middleware
 
             return self
 
+        # handle the unbound class methods
         for fn, rule, options in self._deferred:
+            # check if this is an unbound function of a method
             mod = inspect.getmodule(fn)
+            # use parse
             cls_name, fn_name = tuple(
                 fn.__qualname__.split("<locals>", 1)[0].rsplit(".", 1)
             )

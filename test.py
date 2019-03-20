@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Callable
 
 from sanic.request import Request
 from sanic.response import HTTPResponse, text
@@ -76,6 +77,21 @@ class Backward:
         return text("{} - {}".format(str(self.name[::-1]), self.db.get()))
 
 
+@bp_two.route("/whatever")
+def whatever(req: Request) -> HTTPResponse:
+    return text("whatever")
+
+
+def fuck(name: str) -> Callable:
+    @bp_two.route("/{}".format(name))
+    def what_if_do_something_dumb_like_this(req: Request) -> HTTPResponse:
+        return text(name)
+
+    return what_if_do_something_dumb_like_this
+
+
 app = Server()
+fuck("niels")
+fuck("emily")
 
 jab.Harness().provide(app.jab, bp_one.jab, bp_two.jab, Database).run()
