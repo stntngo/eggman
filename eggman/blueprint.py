@@ -29,19 +29,14 @@ class Blueprint:
         self.strict_slashes = strict_slashes
 
         self._jab = f"eggman.Blueprint.{name}"
-        self.unbound_class_handlers: List[HandlerPkg] = []
         self._deferred: List[HandlerPkg] = []
         self._instances: Dict[str, Any] = {}
 
     def route(self, rule: str, **options: Any) -> Callable:
+
         def wrapper(fn: Handler) -> Handler:
             pkg = HandlerPkg(fn, rule, options)
             self._deferred.append(pkg)
-
-            print(fn.__qualname__, type(fn))
-            if inspect.ismethod(fn) and not hasattr(fn, "__self__"):
-                self.unbound_class_handlers.append(pkg)
-
             return fn
 
         return wrapper
@@ -82,10 +77,13 @@ class Blueprint:
 
         # handle the unbound class methods
         for fn, rule, options in self._deferred:
-            # check if this is an unbound function of a method
             mod = inspect.getmodule(fn)
-            # use parse
 
+            # HACK: Right now when parsing a deferred function handler we try to split its
+            # qualified name into a class name and a method name. If we're unable to do so
+            # then we assume that this function does not belong to a class and we append it
+            # to the list of raw functions with the understanding that it does not need to
+            # have a class instance in order for the function to be called.
             try:
                 cls_name, fn_name = tuple(
                     fn.__qualname__.split("<locals>", 1)[0].rsplit(".", 1)
