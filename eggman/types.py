@@ -1,6 +1,6 @@
 from collections import namedtuple
 from inspect import getmodule
-from typing import Any, Callable, Dict, Generator, List, Type, get_type_hints
+from typing import Any, Callable, Dict, List, Type, get_type_hints
 
 from sanic.request import Request
 from sanic.response import HTTPResponse
