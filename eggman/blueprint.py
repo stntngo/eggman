@@ -23,12 +23,12 @@ class Blueprint:
         strict_slashes: bool = False,
     ) -> None:
         self.name = name
-        self.url_prefix = url_prefix or "/{}".format(name)
+        self.url_prefix = url_prefix or f"/{name}"
         self.version = version
         self.host = host
         self.strict_slashes = strict_slashes
 
-        self._jab = "eggman.Blueprint.{}".format(name)
+        self._jab = f"eggman.Blueprint.{name}"
         self.unbound_class_handlers: List[HandlerPkg] = []
         self._deferred: List[HandlerPkg] = []
         self._instances: Dict[str, Any] = {}
@@ -118,7 +118,7 @@ class Blueprint:
                     class_deps[cls_name][arg] = existing
                     continue
 
-                pseudo_arg = "arg_{}".format(len(constructor_deps))
+                pseudo_arg = f"arg_{len(constructor_deps)}"
 
                 constructor_deps[pseudo_arg] = type_
                 class_deps[cls_name][arg] = pseudo_arg
