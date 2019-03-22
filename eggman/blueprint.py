@@ -27,7 +27,8 @@ class Blueprint:
         strict_slashes: bool = False,
     ) -> None:
         """
-        TODO (niels): Write docstring
+        `Blueprint` is an object that records handler functions that will be registered to
+        and served by a Server object later.
         """
 
         self.name = name
@@ -42,6 +43,9 @@ class Blueprint:
         self._instances: Dict[str, Any] = {}
 
     def route(self, rule: str, **options: Any) -> Callable:
+        """
+        TODO (niels): Write docstirng
+        """
         def wrapper(fn: Handler) -> Handler:
             pkg = HandlerPkg(fn, rule, options)
             self.deferred_routes.append(pkg)
@@ -50,6 +54,9 @@ class Blueprint:
         return wrapper
 
     def websocket(self, rule: str, **options: Any) -> Callable:
+        """
+        TODO (niels): Write docstring
+        """
         def wrapper(fn: WebSocketHandler) -> WebSocketHandler:
             pkg = HandlerPkg(fn, rule, options)
             self.deferred_websocket.append(pkg)
@@ -79,7 +86,7 @@ class Blueprint:
 
         Notes
         -----
-        [1] The formal disction between these two has been eroded in recent versions of Python so we're forced
+        [1] The formal distinction between these two has been eroded in recent versions of Python so we're forced
             to do some hacky name string parsing in order to figure out which is which. Ideally we can find
             a solution that does not involve name string parsing.
         """
@@ -89,6 +96,10 @@ class Blueprint:
         func_ws: List[HandlerPkg] = []
 
         def constructor(app: Router, **kwargs) -> Blueprint:  # type: ignore
+            """
+            `constructor` creates a functional jab provider with the dependencies of the wrapped
+            uninstantiated classes of the blueprint.
+            """
             # handle unbound routes
             for name, cls_ in unbound_routes.constructors.items():
                 dep_map = unbound_routes.constructor_deps[name]
@@ -162,3 +173,4 @@ class Blueprint:
             constructor.__annotations__[arg] = type_
 
         return constructor
+
