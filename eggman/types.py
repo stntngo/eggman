@@ -2,15 +2,10 @@ from collections import namedtuple
 from inspect import getmodule
 from typing import Any, Callable, Dict, List, Type, get_type_hints
 
-from starlette.requests import Request
-from starlette.responses import Response
-from starlette.websockets import WebSocket
-# from sanic.websocket import WebSocketProtocol
+from eggman.alias import Request, Response, WebSocket
 
 Handler = Callable[[Request], Response]
-
 HandlerPkg = namedtuple("HandlerPkg", ["fn", "rule", "options"])
-
 WebSocketHandler = Callable[[WebSocket], None]
 
 
@@ -24,7 +19,7 @@ class UnboundMethodConstructor:
         self.constructor_routes: Dict[str, List[HandlerPkg]] = {}
 
     def update_offset(self, n: int) -> None:
-        self._offset = n
+        self._offset += n
 
     def add(self, fn: Callable, rule: str, **options: Any) -> None:
         mod = getmodule(fn)

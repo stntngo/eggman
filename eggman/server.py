@@ -1,7 +1,7 @@
 from typing import Any, Callable
 
-from starlette.applications import Starlette
 from jab import Receive, Send
+from starlette.applications import Starlette
 
 from eggman.types import Handler, WebSocketHandler
 
@@ -17,8 +17,10 @@ class Server:
     def add_route(self, fn: Handler, rule: str, **options: Any) -> None:
         self._app.add_route(rule, fn, **options)
 
-    def add_websocket_route(self, fn: WebSocketHandler, rule: str, **options: Any) -> None:
-        pass
+    def add_websocket_route(
+        self, fn: WebSocketHandler, rule: str, **options: Any
+    ) -> None:
+        self._app.add_websocket_route(rule, fn, **options)
 
     async def asgi(self, scope: dict, receive: Receive, send: Send) -> None:
         await self._app(scope, receive, send)

@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import asyncio
 
+import jab
 from jab import Logger
-from starlette.requests import Request
-from starlette.responses import Response, PlainTextResponse
+from starlette.responses import PlainTextResponse
 from typing_extensions import Protocol
 
-import jab
-from eggman import Blueprint, Server
+from eggman import Blueprint, Request, Response, Server, WebSocket
 
 
 class GetIncr(Protocol):
@@ -65,16 +64,17 @@ class Test:
 
     @bp_one.route("/age", methods=["GET"])
     def get_age(self, req: Request) -> Response:
-        return PlainTextResponse(self.age)
+        return PlainTextResponse(str(self.age))
 
-    # @bp_one.websocket("/backward")
-    # async def go_backward(self, req: Request, ws: WebSocketProtocol) -> None:
-    #     self.log.critical(str(req))
-    #     for _ in range(1000):
-    #         self._db.decr()
-    #         msg = f"{self.name[::-1]} - {self.db.get()}"
-    #         await ws.send(msg)
-    #         await asyncio.sleep(0.5)
+    @bp_one.websocket("/backward")
+    async def go_backward(self, ws: WebSocket) -> None:
+        await ws.accept()
+        for _ in range(1000):
+            self._db.decr()
+            msg = f"{self.name[::-1]} - {self.db.get()}"
+            await ws.send_text(msg)
+            await asyncio.sleep(0.5)
+        await ws.close()
 
 
 class Backward:
@@ -83,12 +83,14 @@ class Backward:
         self.db = db
         self.name = "niels"
 
-    # @bp_two.websocket("/backward")
-    # async def go_backward(self, req: Request, ws: WebSocketProtocol) -> None:
-    #     for _ in range(100):
-    #         self.db.decr()
-    #         msg = f"{self.name[::-1]} - {self.db.get()}"
-    #         await ws.send(msg)
+    @bp_two.websocket("/backward")
+    async def go_backward(self, ws: WebSocket) -> None:
+        await ws.accept()
+        for _ in range(100):
+            self.db.decr()
+            msg = f"{self.name[::-1]} - {self.db.get()}"
+            await ws.send_text(msg)
+        await ws.close()
 
 
 @bp_two.route("/whatever")

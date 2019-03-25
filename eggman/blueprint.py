@@ -46,6 +46,7 @@ class Blueprint:
         """
         TODO (niels): Write docstirng
         """
+
         def wrapper(fn: Handler) -> Handler:
             pkg = HandlerPkg(fn, rule, options)
             self.deferred_routes.append(pkg)
@@ -57,6 +58,7 @@ class Blueprint:
         """
         TODO (niels): Write docstring
         """
+
         def wrapper(fn: WebSocketHandler) -> WebSocketHandler:
             pkg = HandlerPkg(fn, rule, options)
             self.deferred_websocket.append(pkg)
@@ -173,4 +175,3 @@ class Blueprint:
             constructor.__annotations__[arg] = type_
 
         return constructor
-

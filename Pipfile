@@ -15,6 +15,7 @@ mypy = "*"
 flake8 = "*"
 invoke = "*"
 uvicorn = "*"
+gunicorn = "*"
 
 [requires]
 python_version = "3.7"
