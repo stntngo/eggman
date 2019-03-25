@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Callable
 
 from jab import Logger
-from sanic.request import Request
-from sanic.response import HTTPResponse, text
-from sanic.websocket import WebSocketProtocol
+from starlette.requests import Request
+from starlette.responses import Response, PlainTextResponse
 from typing_extensions import Protocol
 
-import vendor as jab
+import jab
 from eggman import Blueprint, Server
 
 
@@ -56,27 +54,27 @@ class Test:
         self.age = 27
 
     @bp_one.route("/name", methods=["GET"])
-    async def get_name(self, req: Request) -> HTTPResponse:
+    async def get_name(self, req: Request) -> Response:
         await asyncio.sleep(0.5)
         self.db.incr()
-        return text("{} - {}".format(self.name, self.db.get()))
+        return PlainTextResponse("{} - {}".format(self.name, self.db.get()))
 
     @bp_one.route("/other", methods=["POST"])
-    def put_other(self, req: Request) -> HTTPResponse:
-        return text("other")
+    def put_other(self, req: Request) -> Response:
+        return PlainTextResponse("other")
 
     @bp_one.route("/age", methods=["GET"])
-    def get_age(self, req: Request) -> HTTPResponse:
-        return text(self.age)
+    def get_age(self, req: Request) -> Response:
+        return PlainTextResponse(self.age)
 
-    @bp_one.websocket("/backward")
-    async def go_backward(self, req: Request, ws: WebSocketProtocol) -> None:
-        self.log.critical(str(req))
-        for _ in range(1000):
-            self._db.decr()
-            msg = f"{self.name[::-1]} - {self.db.get()}"
-            await ws.send(msg)
-            await asyncio.sleep(0.5)
+    # @bp_one.websocket("/backward")
+    # async def go_backward(self, req: Request, ws: WebSocketProtocol) -> None:
+    #     self.log.critical(str(req))
+    #     for _ in range(1000):
+    #         self._db.decr()
+    #         msg = f"{self.name[::-1]} - {self.db.get()}"
+    #         await ws.send(msg)
+    #         await asyncio.sleep(0.5)
 
 
 class Backward:
@@ -85,19 +83,19 @@ class Backward:
         self.db = db
         self.name = "niels"
 
-    @bp_two.websocket("/backward")
-    async def go_backward(self, req: Request, ws: WebSocketProtocol) -> None:
-        for _ in range(100):
-            self.db.decr()
-            msg = f"{self.name[::-1]} - {self.db.get()}"
-            await ws.send(msg)
+    # @bp_two.websocket("/backward")
+    # async def go_backward(self, req: Request, ws: WebSocketProtocol) -> None:
+    #     for _ in range(100):
+    #         self.db.decr()
+    #         msg = f"{self.name[::-1]} - {self.db.get()}"
+    #         await ws.send(msg)
 
 
 @bp_two.route("/whatever")
-def whatever(req: Request) -> HTTPResponse:
-    return text("whatever")
+def whatever(req: Request) -> Response:
+    return PlainTextResponse("whatever")
 
 
 app = Server()
 
-jab.Harness().provide(app.jab, bp_one.jab, bp_two.jab, Database).run()
+harness = jab.Harness().provide(app.jab, bp_one.jab, bp_two.jab, Database)

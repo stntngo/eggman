@@ -1,7 +1,7 @@
 from typing import Any, Callable
 
-from sanic import Sanic
-from sanic.websocket import WebSocketProtocol
+from starlette.applications import Starlette
+from jab import Receive, Send
 
 from eggman.types import Handler, WebSocketHandler
 
@@ -12,26 +12,16 @@ class Server:
     """
 
     def __init__(self) -> None:
-        self._app = Sanic(__name__)
-
-    def route(self, rule: str, **options: Any) -> Callable:
-        def wrapper(fn: Handler) -> Handler:
-            self.add_route(fn, rule, **options)
-            return fn
-
-        return wrapper
+        self._app = Starlette(__name__)
 
     def add_route(self, fn: Handler, rule: str, **options: Any) -> None:
-        self._app.add_route(fn, rule, **options)
+        self._app.add_route(rule, fn, **options)
 
-    def add_websocket_route(
-        self, fn: WebSocketHandler, rule: str, **options: Any
-    ) -> None:
-        self._app.add_websocket_route(fn, rule, **options)
+    def add_websocket_route(self, fn: WebSocketHandler, rule: str, **options: Any) -> None:
+        pass
 
-    async def run(self) -> None:
-        server = await self._app.create_server(protocol=WebSocketProtocol)
-        await server.wait_closed()
+    async def asgi(self, scope: dict, receive: Receive, send: Send) -> None:
+        await self._app(scope, receive, send)
 
     @property
     def jab(self) -> Callable:

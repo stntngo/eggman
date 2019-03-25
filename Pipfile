@@ -4,17 +4,17 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-sanic = "*"
+starlette = "*"
 typing_extensions = "*"
-jab = {git = "https://github.com/stntngo/jab",editable = true}
-parse = "*"
+jab = {git = "http://github.com/stntngo/jab",ref = "4f7f6c10ef0ec1968051384599d1d2fcd4f10528"}
 
 [dev-packages]
 black = "*"
 isort = "*"
 mypy = "*"
+flake8 = "*"
 invoke = "*"
-rope = "*"
+uvicorn = "*"
 
 [requires]
 python_version = "3.7"

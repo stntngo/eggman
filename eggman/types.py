@@ -2,15 +2,16 @@ from collections import namedtuple
 from inspect import getmodule
 from typing import Any, Callable, Dict, List, Type, get_type_hints
 
-from sanic.request import Request
-from sanic.response import HTTPResponse
-from sanic.websocket import WebSocketProtocol
+from starlette.requests import Request
+from starlette.responses import Response
+from starlette.websockets import WebSocket
+# from sanic.websocket import WebSocketProtocol
 
-Handler = Callable[[Request], HTTPResponse]
+Handler = Callable[[Request], Response]
 
 HandlerPkg = namedtuple("HandlerPkg", ["fn", "rule", "options"])
 
-WebSocketHandler = Callable[[Request, WebSocketProtocol], None]
+WebSocketHandler = Callable[[WebSocket], None]
 
 
 # TODO (niels): Rename this
