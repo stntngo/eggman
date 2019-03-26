@@ -4,15 +4,29 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-sanic = "*"
+uvicorn = "*"
+starlette = "*"
+typing_extensions = "*"
+jab = {git = "http://github.com/stntngo/jab",ref = "4f7f6c10ef0ec1968051384599d1d2fcd4f10528"}
 
 [dev-packages]
 black = "*"
 isort = "*"
 mypy = "*"
+flake8 = "*"
+invoke = "*"
+gunicorn = "*"
+pynvim = "*"
+requests = "*"
+pytest = "*"
+pytest-cov = "*"
 
 [requires]
 python_version = "3.7"
 
 [pipenv]
 allow_prereleases = true
+
+[scripts]
+lint = "invoke lint"
+test = "pytest ."
