@@ -45,13 +45,9 @@ app = Server()
 api = Blueprint("api", url_prefix="/api")
 
 
-class ApiHandlers:
-    def __init__(self) -> None:
-        pass
-
-    @api.route("/hello")
-    async def hello_world(self, request: Request) -> Response:
-        return PlainTextResponse("Hello, world!")
+@api.route("/hello")
+def hello_world(request: Request) -> Response:
+    return PlainTextResponse("Hello, world!")
 
 
 home = Blueprint("home", url_prefix="/home")
@@ -92,6 +88,32 @@ class Other:
     async def decrement(self, req: Request) -> Response:
         self.db.decr()
         return PlainTextResponse(str(self.db.get()))
+
+
+@away.websocket("/countdown")
+async def countdown(ws: WebSocket) -> Response:
+    await ws.accept()
+    start = int(ws.query_params.get("n", 10))
+
+    for i in range(start, 0, -1):
+        await ws.send_text(str(i))
+
+    await ws.close()
+
+
+class WsOther:
+    def __init__(self) -> None:
+        pass
+
+    @away.websocket("/countup")
+    async def countup(self, ws: WebSocket) -> Response:
+        await ws.accept()
+        end = int(ws.query_params.get("n", 10))
+
+        for i in range(end):
+            await ws.send_text(str(i))
+
+        await ws.close()
 
 
 harness = jab.Harness().provide(app.jab, api.jab, home.jab, away.jab, Database)
@@ -136,4 +158,13 @@ def test_websocket():
         for i in range(n):
             data = websocket.receive_text()
             assert data == str(i)
-    pass
+
+    with client.websocket_connect(f"/away/countdown?n={n}") as websocket:
+        for i in range(n, 0, -1):
+            data = websocket.receive_text()
+            assert data == str(i)
+
+    with client.websocket_connect(f"/away/countup?n={n}") as websocket:
+        for i in range(n):
+            data = websocket.receive_text()
+            assert data == str(i)

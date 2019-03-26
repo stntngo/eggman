@@ -30,7 +30,7 @@ class Server:
         """
         Exposes the ASGI interface of the Starlette application to be used with your favorite ASGI server.
         """
-        await self._app(scope, receive, send)
+        await self._app(scope, receive, send)  # pragma: no cover
 
     @property
     def starlette(self) -> Starlette:
