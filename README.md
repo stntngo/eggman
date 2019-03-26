@@ -1,6 +1,6 @@
 # eggman
 
-eggman exposes a `sanic` server in such a way that makes it easy to use within the [jab](https://github.com/stntngo/jab) framework.
+eggman exposes a `starlette` server in such a way that makes it easy to use within the [jab](https://github.com/stntngo/jab) framework and ASGI.
 
 ## Examples
 
