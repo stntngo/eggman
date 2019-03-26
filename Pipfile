@@ -20,7 +20,6 @@ pynvim = "*"
 requests = "*"
 pytest = "*"
 pytest-cov = "*"
-cosmic-ray = "*"
 
 [requires]
 python_version = "3.7"
