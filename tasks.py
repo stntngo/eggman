@@ -21,3 +21,8 @@ def lint(c):  # type: ignore
     isort(c)
     black(c)
     mypy(c)
+
+
+@task
+def test(c):  # type: ignore
+    c.run("python -m pytest .")
