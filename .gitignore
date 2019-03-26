@@ -2,3 +2,4 @@
 .vscode/
 vendor.py
 TRACKER.md
+.coverage

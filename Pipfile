@@ -19,6 +19,7 @@ gunicorn = "*"
 pynvim = "*"
 requests = "*"
 pytest = "*"
+pytest-cov = "*"
 
 [requires]
 python_version = "3.7"
