@@ -8,16 +8,12 @@ eggman exposes a `sanic` server in such a way that makes it easy to use within t
 import jab
 import eggman
 
-from sanic.request import Request
-from sanic.response import HTTPResponse, text
-
-
 app = eggman.Server()
 
 
 @app.route("/hello")
-def hello_world(req: Request) -> HTTPResponse:
-    return text("Hello, world!")
+def hello_world(req: eggman.Request) -> eggman.Response:
+    return eggman.PlainTextResponse("Hello, world!")
 
 
 jab.Harness().provide(app.jab).run()
@@ -28,8 +24,6 @@ import jab
 import eggman
 
 import asyncpg
-from sanic.request import Request
-from sanic.response import HTTPResponse, json
 from typing_extensions import Protocol
 from dataclasses import dataclass
 
@@ -46,10 +40,11 @@ class UserHandler:
     def __init__(self, db: UserGetter) -> None:
         self.db = db
 
-    @app.route("/<name>")
-    async def get_user(self, req: Request, name: str) -> HTTPResponse:
+    @app.route("/{name}")
+    async def get_user(self, req: eggman.Request) -> eggman.Response:
+    	name = req.path_params.get("name")
         data = await self.db.get_user(name)
-        return json(data)
+        return eggman.JSONResponse(data)
 
 
 class Database:

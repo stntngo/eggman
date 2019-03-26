@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+uvicorn = "*"
 starlette = "*"
 typing_extensions = "*"
 jab = {git = "http://github.com/stntngo/jab",ref = "4f7f6c10ef0ec1968051384599d1d2fcd4f10528"}
@@ -14,7 +15,6 @@ isort = "*"
 mypy = "*"
 flake8 = "*"
 invoke = "*"
-uvicorn = "*"
 gunicorn = "*"
 pynvim = "*"
 requests = "*"
