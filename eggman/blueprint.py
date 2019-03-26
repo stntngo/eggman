@@ -9,12 +9,12 @@ from eggman.types import Handler, HandlerPkg, UnboundMethodConstructor, WebSocke
 
 class Router(Protocol):
     def add_route(self, fn: Handler, rule: str, **options: Any) -> None:
-        pass
+        pass  # pragma: no cover
 
     def add_websocket_route(
         self, fn: WebSocketHandler, rule: str, **options: Any
     ) -> None:
-        pass
+        pass  # pragma: no cover
 
 
 class Blueprint:

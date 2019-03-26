@@ -8,23 +8,23 @@ from starlette.responses import PlainTextResponse
 from starlette.testclient import TestClient
 from typing_extensions import Protocol
 
-from eggman import Blueprint, Request, Response, Server
+from eggman import Blueprint, Request, Response, Server, WebSocket
 
 
 class GetIncr(Protocol):
     def get(self) -> int:
-        pass
+        pass  # pragma: no cover
 
     def incr(self) -> None:
-        pass
+        pass  # pragma: no cover
 
 
 class GetDecr(Protocol):
     def get(self) -> int:
-        pass
+        pass  # pragma: no cover
 
     def decr(self) -> None:
-        pass
+        pass  # pragma: no cover
 
 
 class Database:
@@ -69,6 +69,20 @@ class Home:
         self.db.incr()
         return PlainTextResponse(str(self.db.get()))
 
+    @home.route("/name")
+    async def get_name(self, req: Request) -> Response:
+        return PlainTextResponse(self.name)
+
+    @home.websocket("/go-up-again")
+    async def ws_increment(self, ws: WebSocket) -> None:
+        await ws.accept()
+
+        for _ in range(int(ws.query_params.get("n", 0))):
+            self.db.incr()
+            await ws.send_text(str(self.db.get()))
+
+        await ws.close()
+
 
 class Other:
     def __init__(self, db: GetDecr) -> None:
@@ -109,3 +123,17 @@ def test_blueprint_wiring():
     response = client.get("/away/go-down")
     assert response.status_code == 200
     assert response.text == "-1"
+
+    response = client.get("/home/name")
+    assert response.status_code == 200
+    assert response.text == "eggman"
+
+
+def test_websocket():
+    n = 10
+    path = f"/home/go-up-again?n={n}"
+    with client.websocket_connect(path) as websocket:
+        for i in range(n):
+            data = websocket.receive_text()
+            assert data == str(i)
+    pass
