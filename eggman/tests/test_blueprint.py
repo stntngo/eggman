@@ -4,11 +4,10 @@ import asyncio
 
 import jab
 from starlette.applications import Starlette
-from starlette.responses import PlainTextResponse
 from starlette.testclient import TestClient
 from typing_extensions import Protocol
 
-from eggman import Blueprint, Request, Response, Server, WebSocket
+from eggman import Blueprint, Request, Response, Server, WebSocket, PlainTextResponse
 
 
 class GetIncr(Protocol):
