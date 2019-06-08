@@ -41,6 +41,10 @@ class Blueprint:
         self.deferred_routes: List[HandlerPkg] = []
         self.deferred_websocket: List[HandlerPkg] = []
         self._instances: Dict[str, Any] = {}
+        self._mounted_blueprints: List[Blueprint] = []
+
+    def mount(self, bp: Blueprint) -> None:
+        self._mounted_blueprints.append(bp)
 
     def route(self, rule: str, **options: Any) -> Callable:
         def wrapper(fn: Handler) -> Handler:
@@ -84,6 +88,13 @@ class Blueprint:
             forced to do some hacky name string parsing in order to figure out which is which. Ideally we
             can find a solution that does not involve name string parsing.
         """
+
+        for bp in self._mounted_blueprints:
+            prefix = bp.url_prefix
+            for pkg in bp.deferred_routes:
+                rule = prefix + pkg.rule
+                self.deferred_routes.append(HandlerPkg(pkg.fn, rule, pkg.options))
+
         unbound_routes = UnboundMethodConstructor()
         unbound_ws = UnboundMethodConstructor()
         func_routes: List[HandlerPkg] = []

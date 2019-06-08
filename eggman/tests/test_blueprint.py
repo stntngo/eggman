@@ -49,8 +49,20 @@ def hello_world(request: Request) -> Response:
     return PlainTextResponse("Hello, world!")
 
 
+mounted = Blueprint("mounted", url_prefix="/mounted")
+api.mount(mounted)
+
+
+@mounted.route("/hello")
+def hello_mount(request: Request) -> Response:
+    return PlainTextResponse("Hello, world!")
+
+
 home = Blueprint("home", url_prefix="/home")
 away = Blueprint("other", url_prefix="/away")
+mounted_away = Blueprint("mounted_away")
+
+api.mount(mounted_away)
 
 
 class Home:
@@ -84,6 +96,16 @@ class Other:
         self.db = db
 
     @away.route("/go-down")
+    async def decrement(self, req: Request) -> Response:
+        self.db.decr()
+        return PlainTextResponse(str(self.db.get()))
+
+
+class MountedOther:
+    def __init__(self, db: GetDecr) -> None:
+        self.db = db
+
+    @mounted_away.route("/go-down")
     async def decrement(self, req: Request) -> Response:
         self.db.decr()
         return PlainTextResponse(str(self.db.get()))
@@ -132,6 +154,12 @@ def test_free_route():
     assert response.text == "Hello, world!"
 
 
+def test_mounted_blueprint():
+    response = client.get("/api/mounted/hello")
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+
+
 def test_blueprint_wiring():
     response = client.get("/home/go-up")
     assert response.status_code == 200
@@ -142,6 +170,14 @@ def test_blueprint_wiring():
     assert response.text == "0"
 
     response = client.get("/away/go-down")
+    assert response.status_code == 200
+    assert response.text == "-1"
+
+    response = client.get("/api/mounted_away/go-down")
+    assert response.status_code == 200
+    assert response.text == "-2"
+
+    response = client.get("/home/go-up")
     assert response.status_code == 200
     assert response.text == "-1"
 

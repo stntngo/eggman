@@ -29,4 +29,4 @@ allow_prereleases = true
 
 [scripts]
 lint = "invoke lint"
-test = "pytest ."
+test = "invoke test"
