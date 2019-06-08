@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Any, List
 
 import jab
 import pytest
@@ -17,6 +18,21 @@ from eggman import (
     Server,
     WebSocket,
 )
+from eggman.types import Handler, WebSocketHandler
+
+
+class MockServer:
+    def __init__(self) -> None:
+        self._routes: List[str] = []
+        self._websockets: List[str] = []
+
+    def add_route(self, fn: Handler, rule: str, **options: Any) -> None:
+        self._routes.append(rule)
+
+    def add_websocket_route(
+        self, fn: WebSocketHandler, rule: str, **options: Any
+    ) -> None:
+        self._websockets.append(rule)
 
 
 class GetIncr(Protocol):
@@ -252,7 +268,44 @@ def test_chained_invoke():
     api.mount(x)
 
     with pytest.raises(BlueprintAlreadyInvoked):
-        jab.Harness().provide(server.jab, api.jab)
+        jab.Harness().provide(MockServer, api.jab)
+
+
+root = Blueprint("api")
+
+x = Blueprint("x")
+y = Blueprint("y")
+z = Blueprint("z")
+
+
+@z.route("/alpha")
+def alpha(req: Request) -> Response:
+    return PlainTextResponse("alpha")
+
+
+@y.route("/beta")
+def beta(req: Request) -> Response:
+    return PlainTextResponse("beta")
+
+
+@x.route("/gamma")
+def gamma(req: Request) -> Response:
+    return PlainTextResponse("gamma")
+
+
+y.mount(z)
+x.mount(y)
+
+root.mount(x)
+
+
+def test_blueprint_mounting():
+
+    harness = jab.Harness().provide(MockServer, root.jab)
+    server = harness.inspect(MockServer)
+    expected_routes = ["/api/x/gamma", "/api/x/y/beta", "/api/x/y/z/alpha"]
+    observed_routes = server.obj._routes
+    assert sorted(expected_routes) == sorted(observed_routes)
 
 
 def test_multi_invoke():

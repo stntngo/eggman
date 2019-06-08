@@ -84,8 +84,10 @@ class Blueprint:
                     f"{caller} => {self.name}", bp.name, mount_caller
                 )
 
+            prefix = bp.url_prefix
             for route in bp.move_routes(f"{caller} => {self.name}"):
-                routes.append(route)
+                rule = prefix + route.rule
+                routes.append(HandlerPkg(route.fn, rule, route.options))
 
         self.tombstone = True
         self.caller = caller
@@ -150,7 +152,6 @@ class Blueprint:
                     fn = getattr(instance, fn_name)
 
                     uri = self.url_prefix + rule if self.url_prefix else rule
-                    print(f"adding route for {uri}")
 
                     app.add_route(fn, uri, **options)
 
@@ -180,6 +181,7 @@ class Blueprint:
                 app.add_websocket_route(fn, uri, **options)
 
             self.tombstone = True
+            self.caller = "jab"
 
             return self
 

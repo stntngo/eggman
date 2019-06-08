@@ -55,7 +55,7 @@ class Server:
             self._app,
             host=self._host or "0.0.0.0",
             port=self._port or 8000,
-            lifespan=on,
+            lifespan="on",
         )
 
     @property
