@@ -4,7 +4,13 @@ from typing import Any, Callable, Dict, List, Optional
 
 from typing_extensions import Protocol
 
-from eggman.types import Handler, HandlerPkg, UnboundMethodConstructor, WebSocketHandler
+from eggman.types import (
+    BlueprintAlreadyInvoked,
+    Handler,
+    HandlerPkg,
+    UnboundMethodConstructor,
+    WebSocketHandler,
+)
 
 
 class Router(Protocol):
@@ -38,9 +44,15 @@ class Blueprint:
         self.strict_slashes = strict_slashes
 
         self._jab = f"eggman.Blueprint.{name}"
+        self.tombstone: bool = False
+        self.caller: Optional[str] = None
         self.deferred_routes: List[HandlerPkg] = []
         self.deferred_websocket: List[HandlerPkg] = []
         self._instances: Dict[str, Any] = {}
+        self._mounted_blueprints: List[Blueprint] = []
+
+    def mount(self, bp: Blueprint) -> None:
+        self._mounted_blueprints.append(bp)
 
     def route(self, rule: str, **options: Any) -> Callable:
         def wrapper(fn: Handler) -> Handler:
@@ -57,6 +69,43 @@ class Blueprint:
             return fn
 
         return wrapper
+
+    def move_routes(self, caller: str) -> List[HandlerPkg]:
+        """
+        `move_routes` transfers ownership of all of this Blueprint's routes
+        as well as ownership of all of the routes inside of mounted Blueprints
+        to the caller of the method.
+
+        `move_routes` is invoked during the `jab` provide phase to gather all
+        the nested routes under a particular blueprint when the root blueprint
+        is provided to a jab harness.
+
+        Once a caller has invoked `move_routes` the blueprint on which `move_routes`
+        was invoked cannot be used again. It cannot have `move_routes` called on it
+        by some second caller and it cannot be directly provided to a jab harness.
+        """
+        if self.tombstone:
+            self_caller = self.caller or "UNKNOWN"
+            raise BlueprintAlreadyInvoked(caller, self.name, self_caller)
+
+        routes = self.deferred_routes
+
+        for bp in self._mounted_blueprints:
+            if bp.tombstone:
+                mount_caller = bp.caller or "UNKNOWN"
+                raise BlueprintAlreadyInvoked(
+                    f"{caller} => {self.name}", bp.name, mount_caller
+                )
+
+            prefix = bp.url_prefix
+            for route in bp.move_routes(f"{caller} => {self.name}"):
+                rule = prefix + route.rule
+                routes.append(HandlerPkg(route.fn, rule, route.options))
+
+        self.tombstone = True
+        self.caller = caller
+
+        return routes
 
     @property
     def jab(self) -> Callable:
@@ -84,6 +133,13 @@ class Blueprint:
             forced to do some hacky name string parsing in order to figure out which is which. Ideally we
             can find a solution that does not involve name string parsing.
         """
+
+        for bp in self._mounted_blueprints:
+            prefix = bp.url_prefix
+            for pkg in bp.move_routes(self.name):
+                rule = prefix + pkg.rule
+                self.deferred_routes.append(HandlerPkg(pkg.fn, rule, pkg.options))
+
         unbound_routes = UnboundMethodConstructor()
         unbound_ws = UnboundMethodConstructor()
         func_routes: List[HandlerPkg] = []
@@ -91,10 +147,13 @@ class Blueprint:
 
         def constructor(app: Router, **kwargs) -> Blueprint:
             """
-            `constructor` is functional jab provider with the dependencies of the wrapped
+            `constructor` is a functional jab provider with the dependencies of the wrapped
             uninstantiated classes of the blueprint raised to the level of the blueprint.
             """
-            # handle unbound routes
+            if self.tombstone:
+                caller = self.caller or "UNKNOWN"
+                raise BlueprintAlreadyInvoked("jab", self.name, caller)
+
             for name, cls_ in unbound_routes.constructors.items():
                 dep_map = unbound_routes.constructor_deps[name]
                 deps = {k: kwargs[v] for k, v in dep_map.items()}
@@ -102,22 +161,18 @@ class Blueprint:
 
                 self._instances[name] = instance
 
-                # handle routes
                 for fn_name, rule, options in unbound_routes.constructor_routes[name]:
                     fn = getattr(instance, fn_name)
 
                     uri = self.url_prefix + rule if self.url_prefix else rule
-                    print(f"adding route for {uri}")
 
                     app.add_route(fn, uri, **options)
 
-            # handle function routes
             for fn, rule, options in func_routes:
                 uri = self.url_prefix + rule if self.url_prefix else rule
 
                 app.add_route(fn, uri, **options)
 
-            # handle websockets
             for name, cls_ in unbound_ws.constructors.items():
                 instance = self._instances.get(name)
                 if not isinstance(instance, cls_):
@@ -138,7 +193,8 @@ class Blueprint:
 
                 app.add_websocket_route(fn, uri, **options)
 
-            # handle middleware
+            self.tombstone = True
+            self.caller = "jab"
 
             return self
 

@@ -1,13 +1,38 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Any, List
 
 import jab
+import pytest
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 from typing_extensions import Protocol
 
-from eggman import Blueprint, Request, Response, Server, WebSocket, PlainTextResponse
+from eggman import (
+    Blueprint,
+    BlueprintAlreadyInvoked,
+    PlainTextResponse,
+    Request,
+    Response,
+    Server,
+    WebSocket,
+)
+from eggman.types import Handler, WebSocketHandler
+
+
+class MockServer:
+    def __init__(self) -> None:
+        self._routes: List[str] = []
+        self._websockets: List[str] = []
+
+    def add_route(self, fn: Handler, rule: str, **options: Any) -> None:
+        self._routes.append(rule)
+
+    def add_websocket_route(
+        self, fn: WebSocketHandler, rule: str, **options: Any
+    ) -> None:
+        self._websockets.append(rule)
 
 
 class GetIncr(Protocol):
@@ -49,8 +74,20 @@ def hello_world(request: Request) -> Response:
     return PlainTextResponse("Hello, world!")
 
 
+mounted = Blueprint("mounted", url_prefix="/mounted")
+api.mount(mounted)
+
+
+@mounted.route("/hello")
+def hello_mount(request: Request) -> Response:
+    return PlainTextResponse("Hello, world!")
+
+
 home = Blueprint("home", url_prefix="/home")
 away = Blueprint("other", url_prefix="/away")
+mounted_away = Blueprint("mounted_away")
+
+api.mount(mounted_away)
 
 
 class Home:
@@ -84,6 +121,16 @@ class Other:
         self.db = db
 
     @away.route("/go-down")
+    async def decrement(self, req: Request) -> Response:
+        self.db.decr()
+        return PlainTextResponse(str(self.db.get()))
+
+
+class MountedOther:
+    def __init__(self, db: GetDecr) -> None:
+        self.db = db
+
+    @mounted_away.route("/go-down")
     async def decrement(self, req: Request) -> Response:
         self.db.decr()
         return PlainTextResponse(str(self.db.get()))
@@ -132,6 +179,12 @@ def test_free_route():
     assert response.text == "Hello, world!"
 
 
+def test_mounted_blueprint():
+    response = client.get("/api/mounted/hello")
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+
+
 def test_blueprint_wiring():
     response = client.get("/home/go-up")
     assert response.status_code == 200
@@ -142,6 +195,14 @@ def test_blueprint_wiring():
     assert response.text == "0"
 
     response = client.get("/away/go-down")
+    assert response.status_code == 200
+    assert response.text == "-1"
+
+    response = client.get("/api/mounted_away/go-down")
+    assert response.status_code == 200
+    assert response.text == "-2"
+
+    response = client.get("/home/go-up")
     assert response.status_code == 200
     assert response.text == "-1"
 
@@ -167,3 +228,88 @@ def test_websocket():
         for i in range(n):
             data = websocket.receive_text()
             assert data == str(i)
+
+
+def test_chained_invoke():
+    server = Server()
+    api = Blueprint("root")
+    v = Blueprint("v")
+    a = Blueprint("a")
+    b = Blueprint("b")
+    c = Blueprint("c")
+    a.mount(b)
+    v.mount(a)
+    api.mount(v)
+    api.mount(b)
+
+    with pytest.raises(BlueprintAlreadyInvoked):
+        jab.Harness().provide(server.jab, api.jab)
+
+    api = Blueprint("root")
+    v = Blueprint("v")
+
+    a = Blueprint("a")
+    b = Blueprint("b")
+    c = Blueprint("c")
+
+    x = Blueprint("x")
+    y = Blueprint("y")
+    z = Blueprint("z")
+
+    b.mount(c)
+    a.mount(b)
+    v.mount(a)
+    api.mount(v)
+
+    y.mount(z)
+    x.mount(y)
+    c.mount(z)
+
+    api.mount(x)
+
+    with pytest.raises(BlueprintAlreadyInvoked):
+        jab.Harness().provide(MockServer, api.jab)
+
+
+root = Blueprint("api")
+
+x = Blueprint("x")
+y = Blueprint("y")
+z = Blueprint("z")
+
+
+@z.route("/alpha")
+def alpha(req: Request) -> Response:
+    return PlainTextResponse("alpha")
+
+
+@y.route("/beta")
+def beta(req: Request) -> Response:
+    return PlainTextResponse("beta")
+
+
+@x.route("/gamma")
+def gamma(req: Request) -> Response:
+    return PlainTextResponse("gamma")
+
+
+y.mount(z)
+x.mount(y)
+
+root.mount(x)
+
+
+def test_blueprint_mounting():
+
+    harness = jab.Harness().provide(MockServer, root.jab)
+    server = harness.inspect(MockServer)
+    expected_routes = ["/api/x/gamma", "/api/x/y/beta", "/api/x/y/z/alpha"]
+    observed_routes = server.obj._routes
+    assert sorted(expected_routes) == sorted(observed_routes)
+
+
+def test_multi_invoke():
+    away.mount(home)
+
+    with pytest.raises(BlueprintAlreadyInvoked):
+        jab.Harness().provide(app.jab, api.jab, away.jab, Database)

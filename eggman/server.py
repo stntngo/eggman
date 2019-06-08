@@ -1,7 +1,7 @@
-import uvicorn
 import os
 from typing import Any, Callable, Optional
 
+import uvicorn
 from jab import Receive, Send
 from starlette.applications import Starlette
 
@@ -17,8 +17,13 @@ class Server:
     starlette toolkit.
     """
 
-    def __init__(self, host: Optional[str] = None, port: Optional[int] = None) -> None:
-        self._app = Starlette(__name__)
+    def __init__(
+        self,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        debug: bool = False,
+    ) -> None:
+        self._app = Starlette(debug)
         self._host = host
         self._port = port
 
@@ -46,7 +51,12 @@ class Server:
         vestige of when jab did not support an ASGI interface itself and the jab ASGI interface should
         always be used instead of it.
         """
-        uvicorn.run(self._app, host=self._host or "0.0.0.0", port=self._port or 8000)
+        uvicorn.run(
+            self._app,
+            host=self._host or "0.0.0.0",
+            port=self._port or 8000,
+            lifespan="on",
+        )
 
     @property
     def starlette(self) -> Starlette:

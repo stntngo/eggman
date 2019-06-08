@@ -3,3 +3,5 @@
 vendor.py
 TRACKER.md
 .coverage
+.DS_Store
+htmlcov/
