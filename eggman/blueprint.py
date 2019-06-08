@@ -71,6 +71,19 @@ class Blueprint:
         return wrapper
 
     def move_routes(self, caller: str) -> List[HandlerPkg]:
+        """
+        `move_routes` transfers ownership of all of this Blueprint's routes
+        as well as ownership of all of the routes inside of mounted Blueprints
+        to the caller of the method.
+
+        `move_routes` is invoked during the `jab` provide phase to gather all
+        the nested routes under a particular blueprint when the root blueprint
+        is provided to a jab harness.
+
+        Once a caller has invoked `move_routes` the blueprint on which `move_routes`
+        was invoked cannot be used again. It cannot have `move_routes` called on it
+        by some second caller and it cannot be directly provided to a jab harness.
+        """
         if self.tombstone:
             self_caller = self.caller or "UNKNOWN"
             raise BlueprintAlreadyInvoked(caller, self.name, self_caller)
