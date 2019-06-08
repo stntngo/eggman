@@ -13,7 +13,7 @@ def black(c):  # type: ignore
 
 @task
 def mypy(c):  # type: ignore
-    c.run("mypy . --ignore-missing-imports")
+    c.run("mypy eggman --ignore-missing-imports")
 
 
 @task

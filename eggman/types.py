@@ -9,7 +9,13 @@ HandlerPkg = namedtuple("HandlerPkg", ["fn", "rule", "options"])
 WebSocketHandler = Callable[[WebSocket], None]
 
 
-# TODO (niels): Rename this
+class BlueprintAlreadyInvoked(Exception):
+    def __init__(self, caller: str, bp_name: str, owner: str) -> None:
+        super(BlueprintAlreadyInvoked, self).__init__(
+            f"{caller} cannot invoke {bp_name} because {bp_name} has already been invoked by {owner}"
+        )
+
+
 class UnboundMethodConstructor:
     def __init__(self) -> None:
         self._offset = 0

@@ -3,11 +3,20 @@ from __future__ import annotations
 import asyncio
 
 import jab
+import pytest
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 from typing_extensions import Protocol
 
-from eggman import Blueprint, Request, Response, Server, WebSocket, PlainTextResponse
+from eggman import (
+    Blueprint,
+    BlueprintAlreadyInvoked,
+    PlainTextResponse,
+    Request,
+    Response,
+    Server,
+    WebSocket,
+)
 
 
 class GetIncr(Protocol):
@@ -203,3 +212,51 @@ def test_websocket():
         for i in range(n):
             data = websocket.receive_text()
             assert data == str(i)
+
+
+def test_chained_invoke():
+    server = Server()
+    api = Blueprint("root")
+    v = Blueprint("v")
+    a = Blueprint("a")
+    b = Blueprint("b")
+    c = Blueprint("c")
+    a.mount(b)
+    v.mount(a)
+    api.mount(v)
+    api.mount(b)
+
+    with pytest.raises(BlueprintAlreadyInvoked):
+        jab.Harness().provide(server.jab, api.jab)
+
+    api = Blueprint("root")
+    v = Blueprint("v")
+
+    a = Blueprint("a")
+    b = Blueprint("b")
+    c = Blueprint("c")
+
+    x = Blueprint("x")
+    y = Blueprint("y")
+    z = Blueprint("z")
+
+    b.mount(c)
+    a.mount(b)
+    v.mount(a)
+    api.mount(v)
+
+    y.mount(z)
+    x.mount(y)
+    c.mount(z)
+
+    api.mount(x)
+
+    with pytest.raises(BlueprintAlreadyInvoked):
+        jab.Harness().provide(server.jab, api.jab)
+
+
+def test_multi_invoke():
+    away.mount(home)
+
+    with pytest.raises(BlueprintAlreadyInvoked):
+        jab.Harness().provide(app.jab, api.jab, away.jab, Database)

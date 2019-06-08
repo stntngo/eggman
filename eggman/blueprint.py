@@ -4,7 +4,13 @@ from typing import Any, Callable, Dict, List, Optional
 
 from typing_extensions import Protocol
 
-from eggman.types import Handler, HandlerPkg, UnboundMethodConstructor, WebSocketHandler
+from eggman.types import (
+    BlueprintAlreadyInvoked,
+    Handler,
+    HandlerPkg,
+    UnboundMethodConstructor,
+    WebSocketHandler,
+)
 
 
 class Router(Protocol):
@@ -38,6 +44,8 @@ class Blueprint:
         self.strict_slashes = strict_slashes
 
         self._jab = f"eggman.Blueprint.{name}"
+        self.tombstone: bool = False
+        self.caller: Optional[str] = None
         self.deferred_routes: List[HandlerPkg] = []
         self.deferred_websocket: List[HandlerPkg] = []
         self._instances: Dict[str, Any] = {}
@@ -61,6 +69,28 @@ class Blueprint:
             return fn
 
         return wrapper
+
+    def move_routes(self, caller: str) -> List[HandlerPkg]:
+        if self.tombstone:
+            self_caller = self.caller or "UNKNOWN"
+            raise BlueprintAlreadyInvoked(caller, self.name, self_caller)
+
+        routes = self.deferred_routes
+
+        for bp in self._mounted_blueprints:
+            if bp.tombstone:
+                mount_caller = bp.caller or "UNKNOWN"
+                raise BlueprintAlreadyInvoked(
+                    f"{caller} => {self.name}", bp.name, mount_caller
+                )
+
+            for route in bp.move_routes(f"{caller} => {self.name}"):
+                routes.append(route)
+
+        self.tombstone = True
+        self.caller = caller
+
+        return routes
 
     @property
     def jab(self) -> Callable:
@@ -91,7 +121,7 @@ class Blueprint:
 
         for bp in self._mounted_blueprints:
             prefix = bp.url_prefix
-            for pkg in bp.deferred_routes:
+            for pkg in bp.move_routes(self.name):
                 rule = prefix + pkg.rule
                 self.deferred_routes.append(HandlerPkg(pkg.fn, rule, pkg.options))
 
@@ -102,10 +132,13 @@ class Blueprint:
 
         def constructor(app: Router, **kwargs) -> Blueprint:
             """
-            `constructor` is functional jab provider with the dependencies of the wrapped
+            `constructor` is a functional jab provider with the dependencies of the wrapped
             uninstantiated classes of the blueprint raised to the level of the blueprint.
             """
-            # handle unbound routes
+            if self.tombstone:
+                caller = self.caller or "UNKNOWN"
+                raise BlueprintAlreadyInvoked("jab", self.name, caller)
+
             for name, cls_ in unbound_routes.constructors.items():
                 dep_map = unbound_routes.constructor_deps[name]
                 deps = {k: kwargs[v] for k, v in dep_map.items()}
@@ -113,7 +146,6 @@ class Blueprint:
 
                 self._instances[name] = instance
 
-                # handle routes
                 for fn_name, rule, options in unbound_routes.constructor_routes[name]:
                     fn = getattr(instance, fn_name)
 
@@ -122,13 +154,11 @@ class Blueprint:
 
                     app.add_route(fn, uri, **options)
 
-            # handle function routes
             for fn, rule, options in func_routes:
                 uri = self.url_prefix + rule if self.url_prefix else rule
 
                 app.add_route(fn, uri, **options)
 
-            # handle websockets
             for name, cls_ in unbound_ws.constructors.items():
                 instance = self._instances.get(name)
                 if not isinstance(instance, cls_):
@@ -149,7 +179,7 @@ class Blueprint:
 
                 app.add_websocket_route(fn, uri, **options)
 
-            # handle middleware
+            self.tombstone = True
 
             return self
 
