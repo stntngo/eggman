@@ -50,7 +50,7 @@ jobs:
       - run:
           name: code coverage
           command: |
-            pipenv run python -m pytest --cov-report=xml --cov=jab/ test/
+            pipenv run python -m pytest --cov-report=xml --cov=eggman/ test/
 
       - run:
           name: codecov upload
