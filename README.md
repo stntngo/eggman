@@ -1,4 +1,5 @@
 # eggman
+[![codecov](https://codecov.io/gh/stntngo/eggman/branch/master/graph/badge.svg)](https://codecov.io/gh/stntngo/eggman) [![CircleCI](https://circleci.com/gh/stntngo/eggman/tree/master.svg?style=svg)](https://circleci.com/gh/stntngo/eggman/tree/master)
 
 eggman exposes a `starlette` server in such a way that makes it easy to use within the [jab](https://github.com/stntngo/jab) framework and ASGI.
 
