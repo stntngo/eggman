@@ -10,11 +10,7 @@ if sys.version_info.major == 3 and sys.version_info.minor < 7:
 
 VERSION = "0.1.0"
 
-DEPENDENCIES = [
-    "typing_extensions",
-    "starlette",
-    "jab@git+https://github.com/stntngo/jab.git@master",
-]
+DEPENDENCIES = ["typing_extensions", "starlette", "jab@git+https://github.com/stntngo/jab.git@master"]
 
 setup(
     name="eggman",

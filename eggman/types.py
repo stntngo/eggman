@@ -30,9 +30,7 @@ class UnboundMethodConstructor:
     def add(self, fn: Callable, rule: str, **options: Any) -> None:
         mod = getmodule(fn)
 
-        cls_name, fn_name = tuple(
-            fn.__qualname__.split("<locals>", 1)[0].rsplit(".", 1)
-        )
+        cls_name, fn_name = tuple(fn.__qualname__.split("<locals>", 1)[0].rsplit(".", 1))
 
         class_ = getattr(mod, cls_name)
 

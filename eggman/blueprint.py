@@ -17,9 +17,7 @@ class Router(Protocol):
     def add_route(self, fn: Handler, rule: str, **options: Any) -> None:
         pass  # pragma: no cover
 
-    def add_websocket_route(
-        self, fn: WebSocketHandler, rule: str, **options: Any
-    ) -> None:
+    def add_websocket_route(self, fn: WebSocketHandler, rule: str, **options: Any) -> None:
         pass  # pragma: no cover
 
 
@@ -93,9 +91,7 @@ class Blueprint:
         for bp in self._mounted_blueprints:
             if bp.tombstone:
                 mount_caller = bp.caller or "UNKNOWN"
-                raise BlueprintAlreadyInvoked(
-                    f"{caller} => {self.name}", bp.name, mount_caller
-                )
+                raise BlueprintAlreadyInvoked(f"{caller} => {self.name}", bp.name, mount_caller)
 
             prefix = bp.url_prefix
             for route in bp.move_routes(f"{caller} => {self.name}"):

@@ -7,7 +7,7 @@ name = "pypi"
 uvicorn = "*"
 starlette = "*"
 typing_extensions = "*"
-jab = {git = "http://github.com/stntngo/jab",ref = "4f7f6c10ef0ec1968051384599d1d2fcd4f10528"}
+jab = {git = "http://github.com/stntngo/jab"}
 
 [dev-packages]
 black = "*"

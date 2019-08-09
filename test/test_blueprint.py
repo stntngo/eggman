@@ -9,15 +9,7 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 from typing_extensions import Protocol
 
-from eggman import (
-    Blueprint,
-    BlueprintAlreadyInvoked,
-    PlainTextResponse,
-    Request,
-    Response,
-    Server,
-    WebSocket,
-)
+from eggman import Blueprint, BlueprintAlreadyInvoked, PlainTextResponse, Request, Response, Server, WebSocket
 from eggman.types import Handler, WebSocketHandler
 
 
@@ -29,9 +21,7 @@ class MockServer:
     def add_route(self, fn: Handler, rule: str, **options: Any) -> None:
         self._routes.append(rule)
 
-    def add_websocket_route(
-        self, fn: WebSocketHandler, rule: str, **options: Any
-    ) -> None:
+    def add_websocket_route(self, fn: WebSocketHandler, rule: str, **options: Any) -> None:
         self._websockets.append(rule)
 
 
@@ -163,6 +153,7 @@ class WsOther:
 
 
 harness = jab.Harness().provide(app.jab, api.jab, home.jab, away.jab, Database)
+harness.build()
 asyncio.get_event_loop().run_until_complete(harness._on_start())
 
 
@@ -302,6 +293,7 @@ root.mount(x)
 def test_blueprint_mounting():
 
     harness = jab.Harness().provide(MockServer, root.jab)
+    harness.build()
     server = harness.inspect(MockServer)
     expected_routes = ["/api/x/gamma", "/api/x/y/beta", "/api/x/y/z/alpha"]
     observed_routes = server.obj._routes
