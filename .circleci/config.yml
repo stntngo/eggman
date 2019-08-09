@@ -57,3 +57,17 @@ jobs:
           command: |
             pipenv install codecov
             pipenv run codecov
+
+  install:
+    docker:
+      - image: circleci/python:3.7.3-stretch
+
+        working_dir: ~/repo
+
+        steps:
+          - checkout
+
+          - run:
+              name: install pipenv
+              command: |
+                python3 -m pip install --upgrade --src=$HOME/src .
