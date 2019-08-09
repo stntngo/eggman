@@ -17,12 +17,7 @@ class Server:
     starlette toolkit.
     """
 
-    def __init__(
-        self,
-        host: Optional[str] = None,
-        port: Optional[int] = None,
-        debug: bool = False,
-    ) -> None:
+    def __init__(self, host: Optional[str] = None, port: Optional[int] = None, debug: bool = False) -> None:
         self._app = Starlette(debug)
         self._host = host
         self._port = port
@@ -30,9 +25,7 @@ class Server:
     def add_route(self, fn: Handler, rule: str, **options: Any) -> None:
         self._app.add_route(rule, fn, **options)
 
-    def add_websocket_route(
-        self, fn: WebSocketHandler, rule: str, **options: Any
-    ) -> None:
+    def add_websocket_route(self, fn: WebSocketHandler, rule: str, **options: Any) -> None:
         self._app.add_websocket_route(rule, fn, **options)
 
     async def asgi(self, scope: dict, receive: Receive, send: Send) -> None:
@@ -51,12 +44,7 @@ class Server:
         vestige of when jab did not support an ASGI interface itself and the jab ASGI interface should
         always be used instead of it.
         """
-        uvicorn.run(
-            self._app,
-            host=self._host or "0.0.0.0",
-            port=self._port or 8000,
-            lifespan="on",
-        )
+        uvicorn.run(self._app, host=self._host or "0.0.0.0", port=self._port or 8000, lifespan="on")
 
     @property
     def starlette(self) -> Starlette:

@@ -9,15 +9,7 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 from typing_extensions import Protocol
 
-from eggman import (
-    Blueprint,
-    BlueprintAlreadyInvoked,
-    PlainTextResponse,
-    Request,
-    Response,
-    Server,
-    WebSocket,
-)
+from eggman import Blueprint, BlueprintAlreadyInvoked, PlainTextResponse, Request, Response, Server, WebSocket
 from eggman.types import Handler, WebSocketHandler
 
 
@@ -29,9 +21,7 @@ class MockServer:
     def add_route(self, fn: Handler, rule: str, **options: Any) -> None:
         self._routes.append(rule)
 
-    def add_websocket_route(
-        self, fn: WebSocketHandler, rule: str, **options: Any
-    ) -> None:
+    def add_websocket_route(self, fn: WebSocketHandler, rule: str, **options: Any) -> None:
         self._websockets.append(rule)
 
 
