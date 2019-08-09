@@ -58,7 +58,7 @@ jobs:
       - run:
           name: install pipenv
           command: |
-            python3 -m pip install --upgrade --src=$HOME/src .
+            python3 -m pip install --upgrade --src=$HOME/src --user .
 
 workflows:
   version: 2
