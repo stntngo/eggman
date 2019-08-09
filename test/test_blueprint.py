@@ -153,6 +153,7 @@ class WsOther:
 
 
 harness = jab.Harness().provide(app.jab, api.jab, home.jab, away.jab, Database)
+harness.build()
 asyncio.get_event_loop().run_until_complete(harness._on_start())
 
 
@@ -292,6 +293,7 @@ root.mount(x)
 def test_blueprint_mounting():
 
     harness = jab.Harness().provide(MockServer, root.jab)
+    harness.build()
     server = harness.inspect(MockServer)
     expected_routes = ["/api/x/gamma", "/api/x/y/beta", "/api/x/y/z/alpha"]
     observed_routes = server.obj._routes
