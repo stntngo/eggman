@@ -62,12 +62,12 @@ jobs:
     docker:
       - image: circleci/python:3.7.3-stretch
 
-        working_dir: ~/repo
+    working_dir: ~/repo
 
-        steps:
-          - checkout
+    steps:
+      - checkout
 
-          - run:
-              name: install pipenv
-              command: |
-                python3 -m pip install --upgrade --src=$HOME/src .
+      - run:
+          name: install pipenv
+          command: |
+            python3 -m pip install --upgrade --src=$HOME/src .
